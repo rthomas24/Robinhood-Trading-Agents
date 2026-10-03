@@ -1,0 +1,41 @@
+appId: org.robinhood-trading-agents.app
+productName: Robinhood Trading Agents
+directories:
+  buildResources: build
+  output: dist
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!scripts/*'
+  - '!docs/*'
+  - '!assets/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!vite.preview.config.{js,ts,mjs,cjs}'
+  - '!{.eslintrc,.prettierrc,tsconfig*.json,electron-builder.yml}'
+  - '!{.env,.env.*,.npmrc}'
+# The Agent SDK bundles a native per-platform CLI binary; it must live on disk
+# (outside the asar archive) so the SDK can spawn it.
+asarUnpack:
+  - node_modules/@anthropic-ai/claude-agent-sdk*/**
+win:
+  target:
+    - nsis
+  artifactName: robinhood-trading-agents-${version}-setup.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+mac:
+  category: public.app-category.finance
+  target:
+    - dmg
+  artifactName: robinhood-trading-agents-${version}.${ext}
+linux:
+  category: Finance
+  target:
+    - AppImage
+  artifactName: robinhood-trading-agents-${version}.${ext}
+# No auto-update feed and no publish target: builds are made locally from
+# source, and the app never phones home for updates.
+publish: null
+extraMetadata:
+  main: ./out/main/index.js
