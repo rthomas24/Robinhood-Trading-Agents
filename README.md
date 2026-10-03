@@ -22,8 +22,8 @@ texts you back in its own thread.
 (see [Pick a model](#5-pick-a-model)).
 
 ```bash
-git clone https://github.com/rthomas24/Robin-Hood-Trading-Agents.git
-cd Robin-Hood-Trading-Agents
+git clone https://github.com/rthomas24/Robinhood-Trading-Agents.git
+cd Robinhood-Trading-Agents
 npm install
 npm run dev
 ```
