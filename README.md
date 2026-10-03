@@ -3,9 +3,19 @@
 > An independent open-source project. **Not made by, affiliated with or endorsed by
 > Robinhood Markets, Inc.**
 
-**Trading agents you talk to like a friend.** Give an agent one job in plain English — it
-runs on a schedule on your computer, trades through **your own Robinhood account**, and
-texts you back in its own thread.
+**AI agents that trade for you on autopilot, and text you like a friend.** Give an agent
+one job in plain English. It watches the market and trades **on its own, around the clock**,
+through **your own Robinhood account**, and reports back in its own thread.
+
+![Asking an agent a question and watching it work](docs/screenshots/ask-agent.gif)
+
+- **Autonomous, 24/7:** agents run on their schedules day and night while the app is open,
+  and stops, targets and trailing stops are enforced every 15 seconds, even between runs.
+- **Your whole Robinhood portfolio in one place:** balances, every position and today's gain,
+  right next to your agents.
+- **Safe by design:** paper trading by default, and hard limits the AI can't override.
+- **Any model, all local:** Claude, ChatGPT, OpenRouter or a model on your own GPU. No server,
+  no account, no tracking.
 
 ![The main window: agents on the left, one agent's thread in the middle](docs/screenshots/hero.png)
 
@@ -53,13 +63,17 @@ schedule and limits for you to confirm.
 
 ![New agent](docs/screenshots/new-agent.png)
 
-### 2. Talk to it
+### 2. Let it trade for you
 
-Every agent is a conversation. It posts what it did and why: trade receipts with the
-profit or loss, short run reports, and every tool it used (click one to see exactly what
-it looked at). Message it any time to ask a question or change its plan.
+Set an agent to act **on its own** and it trades autonomously: it wakes on its schedule,
+researches, buys and sells within its limits, and tells you what it did, all without you
+lifting a finger. Exits like stops, profit targets and trailing stops are enforced by the
+engine every 15 seconds while the market is open, so a position is protected even between
+runs. Keep the app open and your agents keep working.
 
-![Asking an agent a question and watching it work](docs/screenshots/ask-agent.gif)
+Every agent is also a conversation. It posts trade receipts with the profit or loss, short
+run reports, and every tool it used (click one to see exactly what it looked at). Message
+it any time to ask a question or change its plan.
 
 ### 3. Answer when it asks
 
@@ -96,18 +110,25 @@ Each agent runs on its own model, and you can switch any time.
 
 ![Choosing which model an agent runs on](docs/screenshots/provider-picker.png)
 
-### 6. Check how it's doing
+### 6. See your whole Robinhood portfolio
+
+Click **Portfolio** (bottom right) to open your Robinhood account next to your agents:
+total value, today's gain, buying power, cash, and every position with its price, daily
+change and a live sparkline. Switch to **Paper** to see all your paper agents' books.
+
+![Your Robinhood portfolio inside the app](docs/screenshots/robinhood-portfolio.png)
+
+### 7. Check how it's doing
 
 Click **Stats & performance** in an agent's header for its win rate, profit and loss,
 biggest wins and losses, and a log of every trade the engine blocked and why. The
-**Portfolio** button (bottom right) shows your Robinhood account and all your paper agents
-together over time.
+**Agent books** page charts all your paper agents together over time.
 
 ![An agent's statement](docs/screenshots/stats.png)
 
 ![The paper portfolio](docs/screenshots/portfolio.png)
 
-### 7. Go live (when you're ready)
+### 8. Go live (when you're ready)
 
 1. Connect Robinhood in **Settings → Connections**.
 2. Open the agent's **Settings**, switch it to **Live**, and press **Arm live trading**.
