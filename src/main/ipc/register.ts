@@ -1,8 +1,7 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { openExternalSafely } from '../lib/openExternal'
-import { AGENT_EVENT_CHANNEL, AUTH_EVENT_CHANNEL, LOCAL_EVENT_CHANNEL, REALTIME_EVENT_CHANNEL, IpcChannels, type CreateAgentRequest, type DecisionQuery, type UpdateAgentPatch, type AppSettings, type TradingHaltResult } from '@shared/ipc'
-import type { RealtimeCreateRequest, RealtimeStreamKeyRequest, RealtimeUpdateRequest } from '@shared/realtimeAgents'
-import { realtimeEngine } from '../realtime/RealtimeEngine'
+import { AGENT_EVENT_CHANNEL, AUTH_EVENT_CHANNEL, LOCAL_EVENT_CHANNEL, IpcChannels, type CreateAgentRequest, type DecisionQuery, type UpdateAgentPatch, type AppSettings, type TradingHaltResult } from '@shared/ipc'
+import { normMarketDataFeed, type MarketDataKeyRequest } from '@shared/marketData'
 import { agentSlotBlocked, countActiveAgents, type AgentConfig } from '@shared/agents'
 import { configFromCreateRequest } from '@shared/createAgent'
 import { checkClaudeAuth } from '../claude/auth'
@@ -18,6 +17,7 @@ import { settingsStore } from '../store/settingsStore'
 import { layoutStore } from '../store/layoutStore'
 import { openrouterKey } from '../store/openrouterKey'
 import { mcpKeys } from '../store/mcpKeys'
+import { alpacaKey } from '../store/alpacaKey'
 import type { McpProviderId, RobinhoodLiveTool } from '@shared/mcps'
 import { rhCreds } from '../robinhood/credStore'
 import { connectRobinhood } from '../robinhood/connect'
@@ -125,7 +125,6 @@ export function registerIpc(win: BrowserWindow): () => void {
   const offOpenRouter = openrouterKey.onChange(() => send(AUTH_EVENT_CHANNEL, { kind: 'openrouter', status: openrouterKey.status() }))
   const offChatGpt = onChatGptTokensChange(() => send(AUTH_EVENT_CHANNEL, { kind: 'chatgpt', status: chatgptStatus() }))
   const offLocal = localEngine.onChange((e) => send(LOCAL_EVENT_CHANNEL, e))
-  const offRealtime = realtimeEngine.onEvent((e) => send(REALTIME_EVENT_CHANNEL, e))
   setSignInSuccessHandler(() => {
     focusMainWindow()
     send(AUTH_EVENT_CHANNEL, { kind: 'claude', status: checkClaudeAuth() })
@@ -287,21 +286,19 @@ export function registerIpc(win: BrowserWindow): () => void {
     ipcMain.handle(IpcChannels.mcpStatus, () => mcpKeys.status())
     ipcMain.handle(IpcChannels.mcpSetKey, (_e, id: McpProviderId, key: string) => mcpKeys.set(id, String(key ?? '')))
     ipcMain.handle(IpcChannels.mcpClearKey, (_e, id: McpProviderId) => mcpKeys.clear(id))
-    // Real-time agents (the TypeSafe key stays in main)
-    ipcMain.handle(IpcChannels.realtimeList, () => realtimeEngine.list())
-    ipcMain.handle(IpcChannels.realtimeCreate, (_e, req: RealtimeCreateRequest) => realtimeEngine.create(req))
-    ipcMain.handle(IpcChannels.realtimeUpdate, (_e, id: string, patch: RealtimeUpdateRequest) => realtimeEngine.update(String(id), patch ?? {}))
-    ipcMain.handle(IpcChannels.realtimeDelete, (_e, id: string) => realtimeEngine.delete(String(id)))
-    ipcMain.handle(IpcChannels.realtimeSetStatus, (_e, id: string, status: 'running' | 'paused') => realtimeEngine.setStatus(String(id), status === 'running' ? 'running' : 'paused'))
-    ipcMain.handle(IpcChannels.realtimeResetPaper, (_e, id: string) => realtimeEngine.resetPaper(String(id)))
-    ipcMain.handle(IpcChannels.realtimeTickNow, (_e, id: string) => realtimeEngine.tickNow(String(id)))
-    ipcMain.handle(IpcChannels.realtimeKeyStatus, () => realtimeEngine.keyStatus())
-    ipcMain.handle(IpcChannels.realtimeSetKey, (_e, key: string) => realtimeEngine.setKey(String(key ?? '')))
-    ipcMain.handle(IpcChannels.realtimeClearKey, () => realtimeEngine.clearKey())
-    ipcMain.handle(IpcChannels.realtimeTestKey, () => realtimeEngine.testKey())
-    ipcMain.handle(IpcChannels.realtimeStreamStatus, () => realtimeEngine.streamStatus())
-    ipcMain.handle(IpcChannels.realtimeSetStreamKey, (_e, req: RealtimeStreamKeyRequest) => realtimeEngine.setStreamKey(req))
-    ipcMain.handle(IpcChannels.realtimeClearStreamKey, () => realtimeEngine.clearStreamKey())
+    // Market data key (values stay in main)
+    ipcMain.handle(IpcChannels.marketDataStatus, () => alpacaKey.status())
+    ipcMain.handle(IpcChannels.marketDataSetKey, (_e, req: MarketDataKeyRequest) => {
+      const keyId = String(req?.keyId ?? '').trim()
+      const secret = String(req?.secret ?? '').trim()
+      if (!keyId || !secret) throw new Error('Both the key id and the secret are needed.')
+      alpacaKey.set({ keyId, secret, feed: normMarketDataFeed(req?.feed) })
+      return alpacaKey.status()
+    })
+    ipcMain.handle(IpcChannels.marketDataClearKey, () => {
+      alpacaKey.set(null)
+      return alpacaKey.status()
+    })
   }
 
   return () => {
@@ -311,6 +308,5 @@ export function registerIpc(win: BrowserWindow): () => void {
     offOpenRouter()
     offChatGpt()
     offLocal()
-    offRealtime()
   }
 }

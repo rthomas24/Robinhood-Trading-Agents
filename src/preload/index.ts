@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { AGENT_EVENT_CHANNEL, AUTH_EVENT_CHANNEL, LOCAL_EVENT_CHANNEL, REALTIME_EVENT_CHANNEL, IpcChannels, type AgentEvent, type AuthEvent, type LocalEvent, type RealtimeEvent, type TbApi } from '@shared/ipc'
+import { AGENT_EVENT_CHANNEL, AUTH_EVENT_CHANNEL, LOCAL_EVENT_CHANNEL, IpcChannels, type AgentEvent, type AuthEvent, type LocalEvent, type TbApi } from '@shared/ipc'
 
 function on<T>(channel: string, cb: (payload: T) => void): () => void {
   const handler = (_e: unknown, payload: T): void => cb(payload)
@@ -88,22 +88,10 @@ const api: TbApi & { onAuthEvent(cb: (e: AuthEvent) => void): () => void } = {
     setKey: (id, key) => ipcRenderer.invoke(IpcChannels.mcpSetKey, id, key),
     clearKey: (id) => ipcRenderer.invoke(IpcChannels.mcpClearKey, id)
   },
-  realtime: {
-    list: () => ipcRenderer.invoke(IpcChannels.realtimeList),
-    create: (req) => ipcRenderer.invoke(IpcChannels.realtimeCreate, req),
-    update: (id, patch) => ipcRenderer.invoke(IpcChannels.realtimeUpdate, id, patch),
-    delete: (id) => ipcRenderer.invoke(IpcChannels.realtimeDelete, id),
-    setStatus: (id, status) => ipcRenderer.invoke(IpcChannels.realtimeSetStatus, id, status),
-    resetPaper: (id) => ipcRenderer.invoke(IpcChannels.realtimeResetPaper, id),
-    tickNow: (id) => ipcRenderer.invoke(IpcChannels.realtimeTickNow, id),
-    keyStatus: () => ipcRenderer.invoke(IpcChannels.realtimeKeyStatus),
-    setKey: (key) => ipcRenderer.invoke(IpcChannels.realtimeSetKey, key),
-    clearKey: () => ipcRenderer.invoke(IpcChannels.realtimeClearKey),
-    testKey: () => ipcRenderer.invoke(IpcChannels.realtimeTestKey),
-    streamStatus: () => ipcRenderer.invoke(IpcChannels.realtimeStreamStatus),
-    setStreamKey: (req) => ipcRenderer.invoke(IpcChannels.realtimeSetStreamKey, req),
-    clearStreamKey: () => ipcRenderer.invoke(IpcChannels.realtimeClearStreamKey),
-    onEvent: (cb) => on<RealtimeEvent>(REALTIME_EVENT_CHANNEL, cb)
+  marketData: {
+    status: () => ipcRenderer.invoke(IpcChannels.marketDataStatus),
+    setKey: (req) => ipcRenderer.invoke(IpcChannels.marketDataSetKey, req),
+    clearKey: () => ipcRenderer.invoke(IpcChannels.marketDataClearKey)
   },
   openExternal: (url) => ipcRenderer.invoke(IpcChannels.openExternal, url),
   platform: process.platform,

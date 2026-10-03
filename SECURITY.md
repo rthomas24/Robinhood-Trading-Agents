@@ -41,7 +41,6 @@ Robinhood Trading Agents/
 │   ├─ messages.jsonl            the thread                                     (plain JSON)
 │   ├─ runs.jsonl                one record per run                             (plain JSON)
 │   └─ decisions.jsonl           every allowed or blocked tool call             (plain JSON)
-├─ realtime/<id>/                Real time agents: config, state, tick log      (plain JSON)
 ├─ local-engine-settings.json    local model engine settings
 ├─ local-engine.log              local model engine log
 ├─ claude-token.bin              Claude setup token, if you pasted one          (encrypted)
@@ -50,7 +49,6 @@ Robinhood Trading Agents/
     ├─ chatgpt.bin               ChatGPT (Codex) OAuth tokens                   (encrypted)
     ├─ openrouter.bin            your OpenRouter API key                        (encrypted)
     ├─ market-stream.bin         your Alpaca market-data key                    (encrypted)
-    ├─ typesafe.bin              your TypeSafe key                              (encrypted)
     └─ mcp-keys.bin              data-source keys (Alpha Vantage, Tiingo…)      (encrypted)
 ```
 
@@ -104,8 +102,7 @@ The app makes network requests only to services you have connected or switched o
 | Claude provider | Anthropic, via the Claude Agent SDK / Claude Code | Agent prompts and tool results. Claude Code's own telemetry follows your Claude Code settings; the app does not change them. |
 | ChatGPT provider | `auth.openai.com`, `chatgpt.com` | Sign-in and token refresh; agent prompts and tool results |
 | OpenRouter provider | `openrouter.ai` (then the model's host) | Agent prompts and tool results; a key check when you test the key |
-| Market-data key | `data.alpaca.markets`, `stream.data.alpaca.markets` | Symbols for quotes, bars and the live stream |
-| Real time agents | `api.typesafe.ai` | The computed market situation for the agent's symbols |
+| Market-data key | `data.alpaca.markets` | Symbols for quotes and bars |
 | Data sources you enable | each provider's endpoint — e.g. `secedgar.caseyjhand.com` (a community-hosted SEC EDGAR server), `mcp.alphavantage.co`, `mcp.apify.com` | Their tool calls; local ones are fetched by `npx` / `uvx` |
 | Local GPU | `127.0.0.1` only | Nothing leaves the machine |
 

@@ -20,8 +20,6 @@ import type { AgentEvent, AppSettings, TbApi } from '@shared/ipc'
 import { DEFAULT_GUARDRAILS, DEFAULT_LOCAL_MODEL, DEFAULT_MODEL, DEFAULT_OPENROUTER_MODEL, reportFallbackText, type AgentReport, type AgentSummary, type Ledger, type Message, type RunRecord } from '@shared/agents'
 import { DEFAULT_TOOL_POLICY } from '@shared/mcps'
 import { openAsks } from '@shared/awaiting'
-import { REALTIME_DEFAULTS, type RealtimeConfig, type RealtimeState, type RealtimeSummary, type RealtimeTick } from '@shared/realtimeAgents'
-import type { RealtimeEvent } from '@shared/ipc'
 import { useApp } from '@renderer/store/appStore'
 
 const now = Date.now()
@@ -335,43 +333,6 @@ const patch = (id: string, next: Partial<AgentSummary['state']>): AgentSummary |
   return summary
 }
 
-/** One real-time agent holding NVDA, with a bought-then-sold AAPL round trip on the tape. */
-function realtimeFixture(): RealtimeSummary {
-  const g = { ...REALTIME_DEFAULTS }
-  const config: RealtimeConfig = { id: 'rt-open-range', name: 'Open-range momentum', symbols: ['NVDA', 'AAPL', 'TSLA'], allocation: 5000, intervalSec: 15, guardrails: g, status: 'running', style: 'Buy breakouts above the opening range on heavy volume; take profits quickly.', createdAt: ago(180), updatedAt: ago(180) }
-  const buyN = { id: 'f1', ts: ago(42), symbol: 'NVDA', side: 'buy' as const, qty: 6.8, price: 183.1, realized: 0 }
-  const buyA = { id: 'f2', ts: ago(30), symbol: 'AAPL', side: 'buy' as const, qty: 5.4, price: 231.2, realized: 0 }
-  const sellA = { id: 'f3', ts: ago(9), symbol: 'AAPL', side: 'sell' as const, qty: 5.4, price: 232.9, realized: 9.18 }
-  const ticks: RealtimeTick[] = [
-    { id: 't1', at: ago(42), session: 'open', equity: 5000, unrealized: 0, latencyMs: 412, usage: { input: 1180, output: 6 }, decisions: [
-      { symbol: 'NVDA', price: 183.05, verdict: { action: 'buy', probabilities: { buy: 0.78, hold: 0.22 }, confidence: 0.78 }, intent: 'buy', outcome: 'filled', rule: 'jev.buy', detail: 'Buy 78% ≥ 70%. $1,245.08 — stop $181.73, target $185.85.', fill: buyN, econ: { notional: 1245.08, positionQty: 6.8, positionAvgCost: 183.1, bookRealized: 0 } },
-      { symbol: 'AAPL', price: 231.0, verdict: { action: 'hold', probabilities: { buy: 0.41, hold: 0.59 }, confidence: 0.59 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 59%.' },
-      { symbol: 'TSLA', price: 412.3, verdict: { action: 'buy', probabilities: { buy: 0.74, hold: 0.26 }, confidence: 0.74 }, intent: 'buy', outcome: 'blocked', rule: 'entry.extended', detail: 'Buy 74% ≥ 70%. 2.10% above VWAP $403.82; the limit is 1.5%.' }
-    ] },
-    { id: 't2', at: ago(30), session: 'open', equity: 5004.2, unrealized: 4.2, latencyMs: 388, usage: { input: 1420, output: 8 }, decisions: [
-      { symbol: 'NVDA', price: 183.7, verdict: { action: 'hold', probabilities: { sell: 0.12, hold: 0.88 }, confidence: 0.88, reversal: 0.08 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 88%, reversal 8%.' },
-      { symbol: 'AAPL', price: 231.1, verdict: { action: 'buy', probabilities: { buy: 0.81, hold: 0.19 }, confidence: 0.81 }, intent: 'buy', outcome: 'filled', rule: 'jev.buy', detail: 'Buy 81% ≥ 70%. $1,248.48 — stop $229.47, target $234.67.', fill: buyA, econ: { notional: 1248.48, positionQty: 5.4, positionAvgCost: 231.2, bookRealized: 0 } },
-      { symbol: 'TSLA', price: 411.0, verdict: { action: 'hold', probabilities: { buy: 0.3, hold: 0.7 }, confidence: 0.7 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 70%.' }
-    ] },
-    { id: 't3', at: ago(20), session: 'open', equity: 5011.5, unrealized: 11.5, decisions: [
-      { symbol: 'NVDA', price: 184.1, intent: 'none', outcome: 'quiet', rule: 'quiet', detail: 'Unchanged since the last check.' },
-      { symbol: 'AAPL', price: 232.0, intent: 'none', outcome: 'quiet', rule: 'quiet', detail: 'Unchanged since the last check.' },
-      { symbol: 'TSLA', price: 411.0, intent: 'none', outcome: 'quiet', rule: 'quiet', detail: 'Unchanged since the last check.' }
-    ], skipped: 'No price changed since the last check.' },
-    { id: 't4', at: ago(9), session: 'open', equity: 5015.3, unrealized: 6.1, latencyMs: 455, usage: { input: 1510, output: 9 }, decisions: [
-      { symbol: 'NVDA', price: 184.0, verdict: { action: 'hold', probabilities: { sell: 0.35, hold: 0.65 }, confidence: 0.65, reversal: 0.22 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 65%, reversal 22%.' },
-      { symbol: 'AAPL', price: 232.9, verdict: { action: 'sell', probabilities: { sell: 0.71, hold: 0.29 }, confidence: 0.71, reversal: 0.61 }, intent: 'sell', outcome: 'filled', rule: 'jev.sell', detail: 'Sell 71% ≥ 60%.', fill: sellA, econ: { notional: 1257.66, realized: 9.18, realizedPct: 0.74, costBasis: 231.2, positionQty: 0, positionAvgCost: 0, bookRealized: 9.18, settlesOn: '2026-09-17' } },
-      { symbol: 'TSLA', price: 409.5, verdict: { action: 'hold', probabilities: { buy: 0.2, hold: 0.8 }, confidence: 0.8 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 80%.' }
-    ] }
-  ]
-  const ledger: Ledger = { cash: 5000 - 1245.08 - 1248.48 + 1257.66, positions: [{ symbol: 'NVDA', qty: 6.8, avgCost: 183.1 }], fills: [buyN, buyA, sellA], openOrders: [], realizedPnl: 9.18, unsettled: [{ amount: 1257.66, ts: sellA.ts, settlesOn: '2026-09-17', fillId: 'f3' }] }
-  const state: RealtimeState = { ledger, exits: { NVDA: { entryPrice: 183.1, enteredAt: buyN.ts, stop: 181.73, target: 185.85, high: 184.3 } }, dayDate: new Date(now).toISOString().slice(0, 10), dayStartEquity: 5000, buyLocked: false, lastSellAt: { AAPL: sellA.ts }, lastQuotes: { NVDA: 184.0, AAPL: 232.9, TSLA: 409.5 }, lastTickAt: ago(9), lastError: null, ticksToday: 168, modelCalls: 121, inputTokens: 171_000, outputTokens: 900, recent: ticks }
-  return { config, state }
-}
-
-const rtListeners = new Set<(e: RealtimeEvent) => void>()
-const rtEmit = (e: RealtimeEvent): void => rtListeners.forEach((cb) => cb(e))
-
 const explicit = {
   platform: 'win32',
   claude: { status: async () => ({ vendor: 'claude', authenticated: true, apiKeyOverrideDetected: false, subscriptionType: 'Max', detail: 'Signed in' }), usage: async () => null, overrideUsageHold: async () => undefined },
@@ -490,20 +451,11 @@ const explicit = {
   layout: { get: async () => ({ v: 1, groups: [], order: [], membership: {} }), set: async () => ({ ok: true }) },
   local: { status: async () => null, onEvent: () => () => undefined },
   mcp: { status: async () => ({ keys: {}, runtimes: { uv: false, node: true }, platform: 'win32' }) },
-  // Real-time agents: one fixture with a held position and a few ticks, so the
-  // detail, the tape and the verdict bars are reviewable; the key reads as
-  // stored and tested. The store subscribes at boot, so `onEvent` must exist
-  // (see the note on `local` below).
-  realtime: {
-    list: async () => [realtimeFixture()],
-    keyStatus: async () => ({ hasKey: true, models: ['jev-1.13.0'], testedAt: ago(40) }),
-    streamStatus: async () => ({ configured: true, feed: 'iex', state: 'live', symbols: ['NVDA', 'AAPL', 'TSLA'], trades: 18_422, lastMessageAt: ago(0) }),
-    setStatus: async (_id: string, status: 'running' | 'paused') => ({ ...realtimeFixture(), config: { ...realtimeFixture().config, status } }),
-    tickNow: async () => realtimeFixture(),
-    onEvent: (cb: (e: RealtimeEvent) => void) => {
-      rtListeners.add(cb)
-      return () => rtListeners.delete(cb)
-    }
+  // The market-data key reads as saved, so paper agents mark without Robinhood.
+  marketData: {
+    status: async () => ({ configured: true, feed: 'iex' }),
+    setKey: async (req: { feed: 'iex' | 'sip' }) => ({ configured: true, feed: req.feed }),
+    clearKey: async () => ({ configured: false, feed: 'iex' })
   },
   openrouter: {
     status: async () => ({ hasKey: true, detail: 'Key works (“preview”) · $1.24 used.', label: 'preview', usageUsd: 1.24, limitUsd: null, testedAt: ago(30) }),
@@ -549,37 +501,3 @@ setTimeout(() => {
 setTimeout(() => {
   void useApp.getState().send(A, 'fail — did the 3:58 entry go in?')
 }, 1600)
-
-// The real-time page's live line: a random walk around the fixture's last
-// prices every 1.5 s, and every eighth sample a tick that judged NVDA, so the
-// chart's cells, beads and the panel's bars can be watched moving.
-{
-  const px: Record<string, number> = { NVDA: 184.0, AAPL: 232.9, TSLA: 409.5 }
-  let n = 0
-  setInterval(() => {
-    n++
-    for (const k of Object.keys(px)) px[k] = Math.round(px[k] * (1 + (Math.random() - 0.5) * 0.0012) * 100) / 100
-    const at = new Date().toISOString()
-    rtEmit({ type: 'realtime:price', sample: { at, prices: { ...px } } })
-    if (n % 8 === 0) {
-      const f = realtimeFixture()
-      const buy = Math.random()
-      const tick: RealtimeTick = {
-        id: `mt${n}`,
-        at,
-        session: 'open',
-        equity: 5015 + n * 0.1,
-        unrealized: 6,
-        latencyMs: 380 + Math.round(Math.random() * 120),
-        usage: { input: 1500, output: 8 },
-        decisions: [
-          { symbol: 'NVDA', price: px.NVDA, verdict: { action: 'hold', probabilities: { buy: 0.15, sell: 0.2, hold: 0.65 }, confidence: 0.65, reversal: Math.round(Math.random() * 40) / 100, trendIntact: 0.82 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Up 15% · flat 65% · down 20% · reversal 12% · intact 82%.' },
-          { symbol: 'AAPL', price: px.AAPL, verdict: { action: buy > 0.5 ? 'buy' : 'hold', probabilities: { buy: Math.round(buy * 100) / 100, sell: 0.05, hold: Math.round((0.95 - buy) * 100) / 100 }, confidence: Math.max(buy, 0.95 - buy), extended: 0.3, setup: 1.4 }, intent: buy > 0.7 ? 'buy' : 'hold', outcome: buy > 0.7 ? 'blocked' : 'held', rule: buy > 0.7 ? 'entry.cooldown' : buy > 0.5 ? 'jev.belowThreshold' : 'jev.hold', detail: buy > 0.7 ? 'Sold 9 min ago; 10 min cooldown before re-entering.' : `Up ${Math.round(buy * 100)}%.` },
-          { symbol: 'TSLA', price: px.TSLA, verdict: { action: 'hold', probabilities: { buy: 0.3, hold: 0.7 }, confidence: 0.7 }, intent: 'hold', outcome: 'held', rule: 'jev.hold', detail: 'Hold 70%.' }
-        ]
-      }
-      const { recent: _r, ...slim } = { ...f.state, lastQuotes: { ...px }, lastTickAt: at, modelCalls: f.state.modelCalls + n / 8 }
-      rtEmit({ type: 'realtime:tick', id: f.config.id, tick, state: slim })
-    }
-  }, 1500)
-}

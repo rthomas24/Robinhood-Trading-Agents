@@ -20,7 +20,7 @@ import type { TimelineRow } from './timeline'
 import type { Provider } from './provider'
 import type { AgentLayout } from './agentLayout'
 import type { Playbook } from './earningsPlaybook'
-import type { RealtimeCreateRequest, RealtimeKeyStatus, RealtimePriceSample, RealtimeState, RealtimeStreamKeyRequest, RealtimeStreamStatus, RealtimeSummary, RealtimeTick, RealtimeUpdateRequest } from './realtimeAgents'
+import type { MarketDataKeyRequest, MarketDataStatus } from './marketData'
 
 /* ───────────────────────────── Channels ───────────────────────────── */
 
@@ -95,36 +95,15 @@ export const IpcChannels = {
   mcpStatus: 'mcp:status',
   mcpSetKey: 'mcp:setKey',
   mcpClearKey: 'mcp:clearKey',
-  // Real-time agents (desktop-only paper loop decided by a System One model)
-  realtimeList: 'realtime:list',
-  realtimeCreate: 'realtime:create',
-  realtimeUpdate: 'realtime:update',
-  realtimeDelete: 'realtime:delete',
-  realtimeSetStatus: 'realtime:setStatus',
-  realtimeResetPaper: 'realtime:resetPaper',
-  realtimeTickNow: 'realtime:tickNow',
-  realtimeKeyStatus: 'realtime:keyStatus',
-  realtimeSetKey: 'realtime:setKey',
-  realtimeClearKey: 'realtime:clearKey',
-  realtimeTestKey: 'realtime:testKey',
-  realtimeStreamStatus: 'realtime:streamStatus',
-  realtimeSetStreamKey: 'realtime:setStreamKey',
-  realtimeClearStreamKey: 'realtime:clearStreamKey'
+  // Market data (Alpaca) — the operator's own key; prices paper agents without Robinhood
+  marketDataStatus: 'marketData:status',
+  marketDataSetKey: 'marketData:setKey',
+  marketDataClearKey: 'marketData:clearKey'
 } as const
 
 export const AGENT_EVENT_CHANNEL = 'tb:agent-event'
 export const AUTH_EVENT_CHANNEL = 'tb:auth-event'
 export const LOCAL_EVENT_CHANNEL = 'tb:local-event'
-export const REALTIME_EVENT_CHANNEL = 'tb:realtime-event'
-
-/** Pushed by the real-time engine. A tick carries the state WITHOUT `recent`; the renderer appends the tick itself. */
-export type RealtimeEvent =
-  | { type: 'realtime:updated'; summary: RealtimeSummary }
-  | { type: 'realtime:deleted'; id: string }
-  | { type: 'realtime:tick'; id: string; tick: RealtimeTick; state: Omit<RealtimeState, 'recent'> }
-  /** A quote sample between decisions (every `REALTIME_PRICE_POLL_MS` while an agent runs in session). Ephemeral: never stored. */
-  | { type: 'realtime:price'; sample: RealtimePriceSample }
-  | { type: 'realtime:stream'; status: RealtimeStreamStatus }
 
 /* ───────────────────────────── Local GPU models ───────────────────────────── */
 
@@ -555,26 +534,11 @@ export interface TbApi {
     setKey(id: McpProviderId, key: string): Promise<McpStatus>
     clearKey(id: McpProviderId): Promise<McpStatus>
   }
-  /** Real-time agents: a paper loop on this computer, decided by a System One model. */
-  realtime: {
-    list(): Promise<RealtimeSummary[]>
-    create(req: RealtimeCreateRequest): Promise<RealtimeSummary>
-    update(id: string, patch: RealtimeUpdateRequest): Promise<RealtimeSummary>
-    delete(id: string): Promise<void>
-    setStatus(id: string, status: 'running' | 'paused'): Promise<RealtimeSummary>
-    resetPaper(id: string): Promise<RealtimeSummary>
-    /** One tick now, whatever the schedule says. */
-    tickNow(id: string): Promise<RealtimeSummary>
-    keyStatus(): Promise<RealtimeKeyStatus>
-    setKey(key: string): Promise<RealtimeKeyStatus>
-    clearKey(): Promise<RealtimeKeyStatus>
-    /** Ask the service which models the stored key can use. */
-    testKey(): Promise<RealtimeKeyStatus>
-    /** The live market-data stream (the operator's own key) behind one-second decisions. */
-    streamStatus(): Promise<RealtimeStreamStatus>
-    setStreamKey(req: RealtimeStreamKeyRequest): Promise<RealtimeStreamStatus>
-    clearStreamKey(): Promise<RealtimeStreamStatus>
-    onEvent(cb: (e: RealtimeEvent) => void): () => void
+  /** The operator's own market-data key (Alpaca); the key itself never leaves main. */
+  marketData: {
+    status(): Promise<MarketDataStatus>
+    setKey(req: MarketDataKeyRequest): Promise<MarketDataStatus>
+    clearKey(): Promise<MarketDataStatus>
   }
   openExternal(url: string): Promise<void>
   platform: NodeJS.Platform

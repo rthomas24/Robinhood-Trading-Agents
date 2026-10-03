@@ -4,7 +4,6 @@ import { MessageSquarePlus, Check, ArrowRight, ArrowLeft, ShieldCheck, Clock, Cp
 import { BrandMark } from '@renderer/components/common/BrandMark'
 import { ClaudeCard, ChatGptCard, MarketDataCard, OpenRouterCard, RobinhoodCard } from '@renderer/components/sheets/ConnectionsSheet'
 import { useApp } from '@renderer/store/appStore'
-import { useRealtime } from '@renderer/store/realtimeStore'
 import { cn } from '@renderer/lib/format'
 import { ROBINHOOD_OPTIONAL_HINT } from '@shared/marketData'
 import { AGENT_TEMPLATES } from '@shared/templates'
@@ -33,7 +32,7 @@ export function Onboarding({ onDone }: { onDone: () => void }): JSX.Element {
   const settings = useApp((s) => s.settings)
   const openSheet = useApp((s) => s.openSheet)
   const openAccount = useApp((s) => s.openAccount)
-  const feedOn = useRealtime((s) => Boolean(s.stream?.configured))
+  const feedOn = useApp((s) => Boolean(s.marketData?.configured))
   const [step, setStep] = useState(0)
   const rhOk = Boolean(rh?.connected)
   const localModel = Boolean(settings?.localModel.modelId)

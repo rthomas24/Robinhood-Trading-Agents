@@ -91,7 +91,6 @@ export function CommandPalette(): JSX.Element | null {
   const openSheet = useApp((s) => s.openSheet)
   const openAccount = useApp((s) => s.openAccount)
   const openPaper = useApp((s) => s.openPaper)
-  const openRealtime = useApp((s) => s.openRealtime)
   const runNow = useApp((s) => s.runNow)
   const stopRun = useApp((s) => s.stopRun)
   const stopping = useApp((s) => s.stopping)
@@ -204,7 +203,6 @@ export function CommandPalette(): JSX.Element | null {
     out.push(
       { id: 'g-account', group: 'goto', label: 'Settings', keywords: 'settings connections robinhood preferences trading safety local models mcp', icon: <ArrowRight size={13} />, run: () => openAccount() },
       { id: 'g-paper', group: 'goto', label: 'Paper portfolio', keywords: 'simulated book timeline all-time', icon: <ArrowRight size={13} />, run: () => openPaper() },
-      { id: 'g-realtime', group: 'goto', label: 'Real time', keywords: 'realtime jev typesafe system one fast ticks scalping', icon: <ArrowRight size={13} />, run: () => openRealtime() },
       { id: 'g-panel', group: 'goto', label: portfolioOpen ? 'Hide the portfolio panel' : 'Show the portfolio panel', keywords: 'positions holdings sidebar right', icon: <Wallet size={13} />, run: () => togglePortfolio() }
     )
 
@@ -231,7 +229,7 @@ export function CommandPalette(): JSX.Element | null {
       }
     )
     return out
-  }, [agent, agents, order, working, paused, retired, stopping, mod, theme, calm, portfolioOpen, openSheet, select, openAccount, openPaper, openRealtime, togglePortfolio, runNow, stopRun, setTheme, setCalm])
+  }, [agent, agents, order, working, paused, retired, stopping, mod, theme, calm, portfolioOpen, openSheet, select, openAccount, openPaper, togglePortfolio, runNow, stopRun, setTheme, setCalm])
 
   const results = useMemo(() => {
     const q = query.trim()

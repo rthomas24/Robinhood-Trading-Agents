@@ -12,7 +12,6 @@ import {
   Loader2,
   RotateCcw,
   Settings,
-  Activity,
   Layers,
   ArrowUp,
   ArrowDown,
@@ -26,7 +25,6 @@ import {
   useApp,
   type ModeFilter,
 } from "@renderer/store/appStore";
-import { useRealtime } from "@renderer/store/realtimeStore";
 import { Segmented } from "@renderer/components/common/Sheet";
 import { cn, countdown, pnlClass, relTime } from "@renderer/lib/format";
 import { ASK_LABEL, type Ask, type AskKind } from "@shared/awaiting";
@@ -269,49 +267,6 @@ function lastActivityText(iso: string, now: number): string {
   if (!t) return "No activity yet";
   if (t === "now") return "Last activity just now";
   return /^\d+[mh]$/.test(t) ? `Last activity ${t} ago` : `Last activity ${t}`;
-}
-
-/** Bottom-left entry to the Real time page — paper agents decided every few seconds by the System One model. */
-function RealtimeButton({ collapsed }: { collapsed: boolean }): JSX.Element {
-  const view = useApp((s) => s.view);
-  const openRealtime = useApp((s) => s.openRealtime);
-  const active = view === "realtime";
-  const sub = "Paper · decided by Jev";
-  if (collapsed) {
-    return (
-      <div className="hair-t p-2 flex justify-center no-drag">
-        <button
-          type="button"
-          className="btn-icon h-9 w-9"
-          data-on={active ? "true" : undefined}
-          title={`Real time · ${sub}`}
-          aria-label={`Real time · ${sub}`}
-          onClick={openRealtime}
-        >
-          <Activity size={17} strokeWidth={1.8} />
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="hair-t p-2 pb-0 no-drag">
-      <button
-        type="button"
-        onClick={openRealtime}
-        data-on={active ? "true" : undefined}
-        aria-current={active ? "page" : undefined}
-        className="row w-full flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left"
-      >
-        <span className="inset h-8 w-8 flex items-center justify-center shrink-0 text-muted">
-          <Activity size={16} strokeWidth={1.8} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className={cn("block text-base truncate", active ? "font-medium" : "font-normal")}>Real time</span>
-          <span className="block text-xs text-muted truncate">{sub}</span>
-        </span>
-      </button>
-    </div>
-  );
 }
 
 /** Bottom-left entry to the settings page (full row, or icon-only when collapsed). */
@@ -629,7 +584,7 @@ export function Sidebar(): JSX.Element {
   const refreshMarks = useApp((s) => s.refreshMarks);
   // Marks come from Robinhood, or from a market-data key when it is not connected.
   const rhConnected = useApp((s) => Boolean(s.robinhood?.connected));
-  const feedConfigured = useRealtime((s) => Boolean(s.stream?.configured));
+  const feedConfigured = useApp((s) => Boolean(s.marketData?.configured));
   const canMark = rhConnected || feedConfigured;
   const storedLayout = useApp((s) => s.layout);
   const collapsedGroups = useApp((s) => s.collapsedGroups);
@@ -933,7 +888,6 @@ export function Sidebar(): JSX.Element {
           );
         })}
       </div>
-      <RealtimeButton collapsed />
       <AccountButton collapsed />
     </>
   ) : (
@@ -1300,7 +1254,6 @@ export function Sidebar(): JSX.Element {
           </div>
         )}
       </div>
-      <RealtimeButton collapsed={false} />
       <AccountButton collapsed={false} />
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu)} onClose={closeMenu} />}
     </>
