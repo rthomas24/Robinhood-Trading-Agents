@@ -46,3 +46,27 @@ export const ROBINHOOD_OPTIONAL_HINT = 'Optional for paper trading if you add an
 /** The create sheet's allocation field when there is no broker balance to size against. */
 export const ALLOCATION_NO_BROKER_HINT = 'Paper agents size against the allocation you type here — no Robinhood needed. Connect Robinhood to see your real balance and to trade live.'
 
+/**
+ * The market-data key as the renderer may see it: whether one is stored and
+ * which feed it reads. The key itself never leaves main.
+ */
+export type MarketDataFeed = 'iex' | 'sip'
+
+export interface MarketDataKeyRequest {
+  keyId: string
+  secret: string
+  feed: MarketDataFeed
+}
+
+export interface MarketDataStatus {
+  /** A key is stored. */
+  configured: boolean
+  feed: MarketDataFeed
+}
+
+export const MARKET_DATA_FEED_LABEL: Record<MarketDataFeed, string> = { iex: 'IEX (free, real time)', sip: 'SIP (all exchanges, paid plan)' }
+
+/** Anything that is not `sip` prices from IEX — including a key stored under a feed this app no longer offers. */
+export function normMarketDataFeed(feed: unknown): MarketDataFeed {
+  return feed === 'sip' ? 'sip' : 'iex'
+}

@@ -34,11 +34,10 @@ linter.
   `runner/agentTools.ts` (tool defs: name + description + zod schema + host
   handler), `runner/prompts.ts`, `runner/vendors/{claude,chatgpt,openrouter,local}.ts`,
   `broker/{guardrails,execute,paper}.ts`, `robinhood/{oauth,mcp,api,tools}.ts`,
-  `market/` (feeds), `intel/servers.ts`, `realtime/`, `research/`. **Never import
+  `market/` (feeds), `intel/servers.ts`, `research/`. **Never import
   `electron` here.**
 - `src/main` — Electron main: the `Engine` (one `AgentRunner` per agent), JSON
-  stores, auth flows, IPC (`ipc/register.ts`), the local model engine, the
-  Real time host.
+  stores, auth flows, IPC (`ipc/register.ts`), the local model engine.
 - `src/preload` — the `window.tb` bridge (`TbApi` in `shared/ipc.ts`).
 - `src/renderer` — React 19 + Tailwind v4 + Zustand 5 (`store/appStore.ts`;
   select stable references).

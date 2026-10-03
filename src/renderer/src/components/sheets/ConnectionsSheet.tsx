@@ -5,10 +5,9 @@ import { BrandMark } from '@renderer/components/common/BrandMark'
 import { Sheet } from '@renderer/components/common/Sheet'
 import { SectionHead } from '@renderer/components/common/Primitives'
 import { useApp } from '@renderer/store/appStore'
-import { useRealtime } from '@renderer/store/realtimeStore'
 import { cn, ipcErrorText } from '@renderer/lib/format'
 import { robinhoodConnectionSummary } from '@shared/brokerConnection'
-import { REALTIME_STREAM_FEED_LABEL, type RealtimeStreamFeed } from '@shared/realtimeAgents'
+import { MARKET_DATA_FEED_LABEL, type MarketDataFeed } from '@shared/marketData'
 
 /**
  * One card per connection: a status dot, ONE sentence about where it stands,
@@ -372,35 +371,29 @@ export function RobinhoodCard(): JSX.Element {
 }
 
 /**
- * The operator's own Alpaca Market Data key. Two jobs, one key: it prices
- * PAPER agents when Robinhood is not connected, and it feeds the Real time
- * page's live tape. Stored encrypted on this computer.
+ * The operator's own Alpaca Market Data key: it prices PAPER agents when
+ * Robinhood is not connected. Stored encrypted on this computer.
  */
 export function MarketDataCard(): JSX.Element {
-  const stream = useRealtime((s) => s.stream)
-  const refreshStream = useRealtime((s) => s.refreshStream)
-  const setStreamKey = useRealtime((s) => s.setStreamKey)
-  const clearStreamKey = useRealtime((s) => s.clearStreamKey)
+  const status = useApp((s) => s.marketData)
+  const setStatus = useApp((s) => s.setMarketData)
   const [editing, setEditing] = useState(false)
   const [keyId, setKeyId] = useState('')
   const [secret, setSecret] = useState('')
-  const [feed, setFeed] = useState<RealtimeStreamFeed>('iex')
+  const [feed, setFeed] = useState<MarketDataFeed>('iex')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   useEffect(() => {
-    void refreshStream()
-  }, [refreshStream])
-  useEffect(() => {
-    if (stream?.feed) setFeed(stream.feed)
-  }, [stream?.feed])
-  const configured = Boolean(stream?.configured)
+    if (status?.feed) setFeed(status.feed)
+  }, [status?.feed])
+  const configured = Boolean(status?.configured)
   const showForm = editing || !configured
   const save = async (): Promise<void> => {
     if (!keyId.trim() || !secret.trim()) return
     setBusy(true)
     setErr(null)
     try {
-      await setStreamKey({ keyId: keyId.trim(), secret: secret.trim(), feed })
+      setStatus(await window.tb.marketData.setKey({ keyId: keyId.trim(), secret: secret.trim(), feed }))
       setKeyId('')
       setSecret('')
       setEditing(false)
@@ -414,7 +407,7 @@ export function MarketDataCard(): JSX.Element {
     <ConnCard
       icon={<Activity size={18} />}
       title="Market data (Alpaca)"
-      detail={configured ? `Key saved · ${REALTIME_STREAM_FEED_LABEL[stream?.feed ?? 'iex']}. Paper agents price from it when Robinhood is not connected.` : 'Optional. Lets paper agents trade without Robinhood, and powers the Real time page.'}
+      detail={configured ? `Key saved · ${MARKET_DATA_FEED_LABEL[status?.feed ?? 'iex']}. Paper agents price from it when Robinhood is not connected.` : 'Optional. Lets paper agents trade without Robinhood.'}
       ok={configured}
       action={
         configured && !editing ? (
@@ -442,10 +435,10 @@ export function MarketDataCard(): JSX.Element {
             />
           </div>
           <div className="flex gap-2">
-            <select className="select text-sm" aria-label="Feed" value={feed} onChange={(e) => setFeed(e.target.value as RealtimeStreamFeed)}>
-              {(Object.keys(REALTIME_STREAM_FEED_LABEL) as RealtimeStreamFeed[]).map((f) => (
+            <select className="select text-sm" aria-label="Feed" value={feed} onChange={(e) => setFeed(e.target.value as MarketDataFeed)}>
+              {(Object.keys(MARKET_DATA_FEED_LABEL) as MarketDataFeed[]).map((f) => (
                 <option key={f} value={f}>
-                  {REALTIME_STREAM_FEED_LABEL[f]}
+                  {MARKET_DATA_FEED_LABEL[f]}
                 </option>
               ))}
             </select>
@@ -466,7 +459,7 @@ export function MarketDataCard(): JSX.Element {
           <KeyRound size={12} /> Get a free key
         </button>
         {configured && (
-          <button className="text-xs text-muted hover:text-down" onClick={() => void clearStreamKey()}>
+          <button className="text-xs text-muted hover:text-down" onClick={() => void window.tb.marketData.clearKey().then(setStatus)}>
             Remove key
           </button>
         )}
@@ -491,7 +484,7 @@ export function ConnectionsSheet({ onClose }: { onClose: () => void }): JSX.Elem
         <RobinhoodCard />
       </section>
       <section className="mt-6">
-        <SectionHead title="Market data" hint="Optional prices for paper agents without Robinhood, and the Real time page's live tape." />
+        <SectionHead title="Market data" hint="Optional prices for paper agents without Robinhood." />
         <MarketDataCard />
       </section>
     </Sheet>

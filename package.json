@@ -35,7 +35,6 @@
     "@modelcontextprotocol/client": "^2.0.0",
     "@openrouter/agent": "^0.11.0",
     "@openrouter/sdk": "^1.2.54",
-    "@typesafe-ai/sdk": "^0.6.0",
     "react-markdown": "^9.1.0",
     "remark-gfm": "^4.0.1",
     "zod": "^4.0.0"

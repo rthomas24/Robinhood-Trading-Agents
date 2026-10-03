@@ -19,7 +19,7 @@ Everything runs **on your computer**. Agents think with a model you connect
 (your Claude or ChatGPT login, your own OpenRouter API key, or a GGUF model on
 your own GPU) and trade **only** through **your own Robinhood account**, via the
 Robinhood Agentic Trading MCP. There is no server, no account and no telemetry:
-the app talks only to the services you connect (§13).
+the app talks only to the services you connect (§12).
 
 ## 2. Principles
 
@@ -54,7 +54,7 @@ the app talks only to the services you connect (§13).
 ## 4. The desktop app
 
 - **Sidebar** — agents in operator-arranged groups (drag to reorder, a
-  "Waiting on you" queue, a Retired list), New agent, Real time, Settings.
+  "Waiting on you" queue, a Retired list), New agent, Settings.
 - **Thread** — memos (an agent's turns), receipts (fills), plan / question /
   approval cards, run groups with every tool call expandable to its full input
   and result, a live bubble while a run streams, and a composer that queues a
@@ -89,10 +89,9 @@ src/core/
   broker/execute.ts     paper or live execution, exits, watches, retirement
   broker/paper.ts       the paper ledger and fill simulation
   robinhood/            OAuth (PKCE), the MCP client, typed API wrappers, the tool allowlist
-  market/               price feeds: Robinhood, Alpaca (REST + stream), the tape
+  market/               price feeds: Robinhood, Alpaca
   intel/servers.ts      operator-enabled data-source MCP servers
-  realtime/             the Real time agents (§11)
-  research/earnings.ts  the earnings playbook's research tools (§12)
+  research/earnings.ts  the earnings playbook's research tools (§11)
 ```
 
 ### 5.1 A run, step by step
@@ -260,16 +259,7 @@ servers and skip stdio ones with a log line.
 - A quiet interval tick — nothing moved, nothing pending — is skipped without
   calling the model, and the run log says why.
 
-## 11. Real time agents
-
-The **Real time** page holds a separate kind of agent: paper-only, checked
-every 1–300 s through the regular session, decided by TypeSafe's System One
-model (your own TypeSafe key). The model answers small typed questions
-(direction, extension, setup quality, reversal) about a situation computed in
-code; exits, entry windows, sizing and thresholds are code-owned
-(`core/realtime/policy.ts`). Live prints come from your Alpaca key's stream.
-
-## 12. Playbooks
+## 11. Playbooks
 
 `AgentConfig.playbook: 'earningsPop'` (the **Earnings All-In** template) is a
 mode the engine runs: a fixed daily cycle, one name at a time, all spendable
@@ -277,7 +267,7 @@ cash per buy, a report-window check, a next-open flatten, and two research
 tools (`earnings_candidates`, `earnings_dossier`). The rules live in
 `shared/earningsPlaybook.ts` so no task sentence can change them.
 
-## 13. Privacy and network
+## 12. Privacy and network
 
 Nothing is sent anywhere you did not connect. The app makes requests to:
 
@@ -287,15 +277,14 @@ Nothing is sent anywhere you did not connect. The app makes requests to:
 | Claude provider | Anthropic, through the Claude Agent SDK / Claude Code |
 | ChatGPT provider | `auth.openai.com`, `chatgpt.com` |
 | OpenRouter provider | `openrouter.ai` |
-| Market-data key | `data.alpaca.markets`, `stream.data.alpaca.markets` |
-| Real time agents | TypeSafe's API (`@typesafe-ai/sdk`) |
+| Market-data key | `data.alpaca.markets` |
 | Data sources you enable | each provider's endpoint; `npx`/`uvx` fetch their packages |
 | Local GPU | `127.0.0.1` only |
 
 There is no analytics, crash reporting, auto-update or account. The run tracer
 seam (`core/trace/types.ts`) is unused by default.
 
-## 14. Persistence
+## 13. Persistence
 
 Everything lives in Electron's `userData` directory:
 
@@ -305,25 +294,24 @@ agents/<id>/state.json       its book, memory, exits, watches… (atomic writes:
 agents/<id>/messages.jsonl   the thread
 agents/<id>/runs.jsonl       one record per run
 agents/<id>/decisions.jsonl  the decision log
-realtime/<id>/               Real time agents: config, state, tick log
 settings.json                app settings (theme, tool policy, defaults, halt)
 layout.json                  the sidebar arrangement
 credentials/*.bin            tokens and keys, encrypted with safeStorage
 ```
 
-## 15. Repository layout
+## 14. Repository layout
 
 ```
 src/shared     types + pure logic shared by main, preload and renderer (no Node APIs)
 src/core       the Electron-free runtime (runner, vendors, broker, robinhood, market, intel)
-src/main       Electron main: auth flows, stores, engine, IPC, local model engine, realtime host
+src/main       Electron main: auth flows, stores, engine, IPC, local model engine
 src/preload    the window.tb bridge (TbApi)
 src/renderer   React 19 + Tailwind v4 + Zustand 5
 scripts/       checks (scripts/checks/check-*.ts) and generators
 docs/          this file and the design system
 ```
 
-## 16. Checks
+## 15. Checks
 
 `npm run check` runs every `scripts/checks/check-*.ts`: standalone, no
 credentials, no network. Each pins one behaviour — usually a failure that

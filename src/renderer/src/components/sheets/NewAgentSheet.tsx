@@ -14,7 +14,6 @@ import { AgentAvatar, COLORS } from '@renderer/components/common/AgentAvatar'
 import { ScheduleForm } from './ScheduleForm'
 import { TemplateGallery } from './TemplateGallery'
 import { useApp } from '@renderer/store/appStore'
-import { useRealtime } from '@renderer/store/realtimeStore'
 import { PROVIDER_HINT, PROVIDER_LABEL, providerOf, providerTarget, type Provider } from '@shared/provider'
 import { ALLOCATION_NO_BROKER_HINT, paperModeHint } from '@shared/marketData'
 import { liveAllocationVerdict, liveRoom, liveRoomLabel } from '@shared/liveAllocation'
@@ -34,7 +33,7 @@ const ALLOC_MIN = 1
 export function NewAgentSheet({ onClose, initialTemplateId, initialDuplicateOf, initialMode }: { onClose: () => void; initialTemplateId?: string; initialDuplicateOf?: string; initialMode?: Mode }): JSX.Element {
   const rh = useApp((s) => s.robinhood)
   // The operator's own market-data key prices paper agents without Robinhood.
-  const feedOn = useRealtime((s) => Boolean(s.stream?.configured))
+  const feedOn = useApp((s) => Boolean(s.marketData?.configured))
   const settings = useApp((s) => s.settings)
   const agents = useApp((s) => s.agents)
   const select = useApp((s) => s.select)

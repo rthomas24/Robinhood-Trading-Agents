@@ -1,7 +1,6 @@
 import type { JSX } from 'react'
 import { useEffect, useState } from 'react'
 import { useApp, type SheetKind } from './store/appStore'
-import { useRealtime } from './store/realtimeStore'
 import { Sidebar } from './components/layout/Sidebar'
 import { StatusBar } from './components/layout/StatusBar'
 import { ThreadView } from './components/thread/ThreadView'
@@ -14,7 +13,6 @@ import { Onboarding } from './components/onboarding/Onboarding'
 import { PortfolioPanel } from './components/portfolio/PortfolioPanel'
 import { AccountPage } from './components/account/AccountPage'
 import { PaperPortfolioPage } from './components/portfolio/PaperPortfolioPage'
-import { RealtimePage } from './components/realtime/RealtimePage'
 import { SheetClosing } from './components/common/Sheet'
 import { CommandPalette } from './components/common/CommandPalette'
 import { EmptyState } from './components/common/Primitives'
@@ -70,13 +68,9 @@ export default function App(): JSX.Element {
   const updateSettings = useApp((s) => s.updateSettings)
   const { shown, closing } = useLingeringSheet(sheet)
 
-  // The market-data key status is read up front too: it decides whether paper
-  // agents can be marked without Robinhood (sidebar P&L).
-  const refreshStream = useRealtime((s) => s.refreshStream)
   useEffect(() => {
     void boot()
-    void refreshStream()
-  }, [boot, refreshStream])
+  }, [boot])
 
   // Having an agent IS being past onboarding, so record it the moment it is
   // true rather than only when the sheet is dismissed.
@@ -158,8 +152,6 @@ export default function App(): JSX.Element {
           <AccountPage />
         ) : view === 'paper' ? (
           <PaperPortfolioPage />
-        ) : view === 'realtime' ? (
-          <RealtimePage />
         ) : selectedId ? (
           <ThreadView agentId={selectedId} />
         ) : (

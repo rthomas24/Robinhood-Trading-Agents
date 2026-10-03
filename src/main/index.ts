@@ -6,7 +6,6 @@ import { existsSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpc } from './ipc/register'
 import { engine } from './engine/Engine'
-import { realtimeEngine } from './realtime/RealtimeEngine'
 import { loadStoredTokenIntoEnv } from './claude/tokenStore'
 import { settingsStore } from './store/settingsStore'
 import { themeById } from '@shared/themes'
@@ -77,8 +76,6 @@ app.whenReady().then(async () => {
   try {
     await engine.init()
     engine.onEvent(routeNotification)
-    // Real-time paper agents (System One model); sleeps until the open.
-    realtimeEngine.init()
   } catch (err) {
     console.error('[robinhood-trading-agents] engine init failed', err)
   }
@@ -103,7 +100,6 @@ app.on('before-quit', (e) => {
   if (shutdown === 'stopping') return
   shutdown = 'stopping'
   engine.disposeAll()
-  realtimeEngine.disposeAll()
   usageService.stop()
   void Promise.race([localEngine.close(), new Promise<void>((resolve) => setTimeout(resolve, 5_000))]).finally(() => {
     shutdown = 'done'

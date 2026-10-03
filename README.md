@@ -44,7 +44,6 @@ on your machine, and the app talks only to the services you connect yourself. Se
   - [Bring your own model](#bring-your-own-model)
   - [Market data and data sources](#market-data-and-data-sources)
   - [Track record, stats and portfolio](#track-record-stats-and-portfolio)
-  - [Real time agents](#real-time-agents)
   - [The Earnings All-In playbook](#the-earnings-all-in-playbook)
   - [Organising agents](#organising-agents)
   - [Look and feel](#look-and-feel)
@@ -255,7 +254,7 @@ Run-safety guards apply to every provider:
 
 - **Robinhood** quotes and historical bars when connected.
 - **Alpaca market-data key (optional).** Paper agents can price trades before you connect a
-  broker. It also powers the live stream for Real time agents.
+  broker.
 - **Computed technicals.** Agents are given numbers computed in code, not left to estimate
   them: VWAP, the opening range, ATR, average daily range, distance from the open, and days to
   earnings.
@@ -286,20 +285,6 @@ Run-safety guards apply to every provider:
 - **Copyable scorecard.** It says PAPER or LIVE first and "not a forecast" last.
 - **Portfolio page.** Paper and live books shown separately, never summed, with a P&L
   timeline across days.
-
-### Real time agents
-
-<!-- SCREENSHOT: docs/screenshots/realtime.png — the Real time page: live chart, decision panel and feed -->
-
-A separate, paper-only kind of agent. It checks a live tape as often as every second during
-market hours.
-
-- **How it decides.** It asks TypeSafe's System One model small typed questions (direction,
-  extension, setup quality, reversal) about a situation computed in code. You need your own
-  TypeSafe key.
-- **Code-owned limits.** Exits, entry windows, sizing and thresholds are enforced in code.
-- **A live dashboard:** the price line, every decision as a cell on the chart, the model's
-  probabilities, and a feed of every check.
 
 ### The Earnings All-In playbook
 
@@ -343,9 +328,7 @@ An engine-run mode started from the **Earnings All-In** template:
 - A **Robinhood** account with Agentic Trading, for live trading and broker quotes. You
   connect it with OAuth in your browser.
 - **Optional:**
-  - an [Alpaca](https://alpaca.markets) market-data key, for paper pricing without Robinhood
-    and for the Real time stream;
-  - a TypeSafe key, for Real time agents;
+  - an [Alpaca](https://alpaca.markets) market-data key, for paper pricing without Robinhood;
   - keys for any data sources you enable;
   - `npx`/`uvx` on your `PATH` for the local-process data sources.
 
@@ -446,7 +429,7 @@ The short version:
 ## Third-party services and terms
 
 Robinhood Trading Agents is an independent open-source project. It is not made by, affiliated with,
-endorsed by or sponsored by Robinhood Markets, Inc., Anthropic, OpenAI, OpenRouter, Alpaca, TypeSafe or any data
+endorsed by or sponsored by Robinhood Markets, Inc., Anthropic, OpenAI, OpenRouter, Alpaca or any data
 provider. All product names and logos belong to their owners.
 
 You connect your own accounts, and **you are responsible for complying with each service's

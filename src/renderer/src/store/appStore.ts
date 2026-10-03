@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { compareAgentSummaries, newId, symbolsToMark, type AgentColor, type AgentSummary, type Message, type Mode } from '@shared/agents'
 import { isAsk, type Ask } from '@shared/awaiting'
 import type { AgentEvent, ChatGptAuthStatus, ClaudeAuthStatus, ClaudeUsage, LocalStatus, McpStatus, OpenRouterStatus, Quote, RobinhoodStatus, AppSettings, RunDelta } from '@shared/ipc'
+import type { MarketDataStatus } from '@shared/marketData'
 import type { ThemeId } from '@shared/themes'
 import { providerOf, type Provider } from '@shared/provider'
 import { applyCalm, applyTheme } from '@renderer/lib/theme'
@@ -80,8 +81,8 @@ function readModeFilter(): ModeFilter {
   const v = localStorage.getItem(MODE_FILTER_KEY)
   return v === 'paper' || v === 'live' ? v : 'all'
 }
-/** What fills the main pane: the selected agent's thread, the account/settings page, the paper book, or the Real time page. */
-export type MainView = 'thread' | 'account' | 'paper' | 'realtime'
+/** What fills the main pane: the selected agent's thread, the account/settings page, or the paper book. */
+export type MainView = 'thread' | 'account' | 'paper'
 
 /**
  * Calm mode: the operator wants to read the fleet without the money shouting.
@@ -120,6 +121,8 @@ interface AppState {
   robinhood: RobinhoodStatus | null
   /** The operator's OpenRouter key, as the renderer may see it (the key itself never leaves main). */
   openrouter: OpenRouterStatus | null
+  /** The operator's market-data key (Alpaca), as the renderer may see it: configured, and which feed. */
+  marketData: MarketDataStatus | null
   /** Local GPU engine (null until Settings → Local models is opened or a Local GPU agent exists). */
   local: LocalStatus | null
   settings: AppSettings | null
@@ -164,8 +167,6 @@ interface AppState {
   openAccount(section?: AccountSection): void
   /** The all-time paper book, every simulated agent including retired ones. */
   openPaper(): void
-  /** Real-time paper agents decided by the System One model. */
-  openRealtime(): void
   loadMessages(id: string, more?: boolean): Promise<void>
   applyEvent(e: AgentEvent): void
   /** Apply one coalesced batch of streaming deltas (see DELTA_FLUSH_MS). */
@@ -221,6 +222,7 @@ interface AppState {
   refreshLocal(): Promise<void>
   refreshConnections(): Promise<void>
   setOpenRouter(status: OpenRouterStatus | null): void
+  setMarketData(status: MarketDataStatus | null): void
 }
 
 /** How often the ask list re-ages. A question deadline is the only ask that expires without an event. */
@@ -260,6 +262,7 @@ export const useApp = create<AppState>((set, get) => ({
   claudeUsage: null,
   robinhood: null,
   openrouter: null,
+  marketData: null,
   marks: {},
   asks: [],
   local: null,
@@ -282,13 +285,14 @@ export const useApp = create<AppState>((set, get) => ({
     // StrictMode mounts App twice in dev — never double-subscribe the bridges.
     if (bootStarted) return
     bootStarted = true
-    const [list, claude, chatgpt, claudeUsage, robinhood, openrouter, settings, mcp, layout] = await Promise.all([
+    const [list, claude, chatgpt, claudeUsage, robinhood, openrouter, marketData, settings, mcp, layout] = await Promise.all([
       window.tb.agents.list(),
       window.tb.claude.status(),
       window.tb.chatgpt.status().catch(() => null),
       window.tb.claude.usage().catch(() => null),
       window.tb.robinhood.status(),
       window.tb.openrouter.status().catch(() => null),
+      window.tb.marketData.status().catch(() => null),
       window.tb.settings.get(),
       window.tb.mcp.status().catch(() => null),
       window.tb.layout.get().catch(() => EMPTY_LAYOUT)
@@ -296,7 +300,7 @@ export const useApp = create<AppState>((set, get) => ({
     const agents = Object.fromEntries(list.map((a) => [a.config.id, a]))
     const order = sortIds(agents)
     const selectedId = localStorage.getItem('tb:selected') && agents[localStorage.getItem('tb:selected')!] ? localStorage.getItem('tb:selected') : (order[0] ?? null)
-    set({ agents, order, selectedId, claude, chatgpt, claudeUsage, robinhood, openrouter, settings, mcp, layout, booted: true })
+    set({ agents, order, selectedId, claude, chatgpt, claudeUsage, robinhood, openrouter, marketData, settings, mcp, layout, booted: true })
     void get().refreshAsks()
     // Asks used to refresh only when a message arrived, and one of them now ages
     // out on a CLOCK rather than an event: a question whose deadline passes stops
@@ -353,9 +357,6 @@ export const useApp = create<AppState>((set, get) => ({
 
   openPaper() {
     set({ view: 'paper', sheet: { kind: 'none' } })
-  },
-  openRealtime() {
-    set({ view: 'realtime', sheet: { kind: 'none' } })
   },
   openAccount(section) {
     set((s) => ({
@@ -715,17 +716,21 @@ export const useApp = create<AppState>((set, get) => ({
     set({ mcp })
   },
   async refreshConnections() {
-    const [claude, chatgpt, claudeUsage, robinhood, openrouter] = await Promise.all([
+    const [claude, chatgpt, claudeUsage, robinhood, openrouter, marketData] = await Promise.all([
       window.tb.claude.status(),
       window.tb.chatgpt.status().catch(() => null),
       window.tb.claude.usage().catch(() => null),
       window.tb.robinhood.status(),
-      window.tb.openrouter.status().catch(() => null)
+      window.tb.openrouter.status().catch(() => null),
+      window.tb.marketData.status().catch(() => null)
     ])
-    set({ claude, chatgpt, claudeUsage, robinhood, openrouter })
+    set({ claude, chatgpt, claudeUsage, robinhood, openrouter, marketData })
   },
   setOpenRouter(openrouter) {
     set({ openrouter })
+  },
+  setMarketData(marketData) {
+    set({ marketData })
   },
   async refreshAsks() {
     try {

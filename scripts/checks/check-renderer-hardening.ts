@@ -125,11 +125,11 @@ for (const f of ['robinhood/connect.ts', 'chatgpt/oauth.ts']) {
 }
 
 // ── 6. store ids ───────────────────────────────────────────────────────────
-check('every id newId mints is storable', Array.from({ length: 200 }, (_, i) => newId(['ag_', 'rt_', 'm_', ''][i % 4])).every(isStoredId))
+check('every id newId mints is storable', Array.from({ length: 200 }, (_, i) => newId(['ag_', 'm_', ''][i % 3])).every(isStoredId))
 for (const bad of ['..', '../x', '..\\x', 'a/b', 'a\\b', 'C:', '', ' ag_1', 'ag_1\n', 'x'.repeat(81)]) {
   check(`refuses id ${JSON.stringify(bad.slice(0, 20))}`, !isStoredId(bad))
 }
-for (const f of [['store', 'agentStore.ts'], ['realtime', 'store.ts']]) {
+for (const f of [['store', 'agentStore.ts']]) {
   const text = src('src', 'main', ...f)
   const direct = (text.match(/join\(root\(\), /g) ?? []).length
   check(`${f.join('/')}: ids reach the disk only through pathOf`, direct === 1 && /if \(!isStoredId\(id\)\) throw/.test(text), `${direct} direct join(root(), …)`)
@@ -143,7 +143,7 @@ check('agents:update takes an allowlist of fields', fields.length > 0 && /updata
 check('…which never includes liveArmedAt or the id', !/'liveArmedAt'|'id'|'createdAt'/.test(fields), fields)
 check('…and a provider move is refused there (it goes through setProvider)', /patch\.model\.vendor !== cur\.model\.vendor\) throw/.test(register))
 check('arming live reads the same connection status the UI does', /armBlockedReason\(rhCreds\.status\(\)\)/.test(src('src', 'main', 'engine', 'Engine.ts')))
-const secretStores = [['main', 'store', 'openrouterKey.ts'], ['main', 'store', 'alpacaKey.ts'], ['main', 'store', 'typesafeKey.ts'], ['main', 'store', 'mcpKeys.ts'], ['main', 'claude', 'tokenStore.ts'], ['main', 'chatgpt', 'oauth.ts'], ['main', 'robinhood', 'credStore.ts']]
+const secretStores = [['main', 'store', 'openrouterKey.ts'], ['main', 'store', 'alpacaKey.ts'], ['main', 'store', 'mcpKeys.ts'], ['main', 'claude', 'tokenStore.ts'], ['main', 'chatgpt', 'oauth.ts'], ['main', 'robinhood', 'credStore.ts']]
 for (const f of secretStores) {
   const text = src('src', ...f)
   check(`${f.slice(1).join('/')}: secrets go through secureFile (atomic), never writeFileSync`, !/writeFileSync/.test(text) && /from '\.\.\/lib\/secureFile'/.test(text))
