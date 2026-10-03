@@ -9,8 +9,6 @@ texts you back in its own thread.
 
 ![The main window: agents on the left, one agent's thread in the middle](docs/screenshots/hero.png)
 
-<sub>Screenshots show the app running on sample data — not real trades or results.</sub>
-
 > [!WARNING]
 > **This is not financial advice, and it can lose money.** Every agent starts in **paper**
 > mode (pretend money, real prices). Real orders only happen after you switch an agent to
