@@ -15,12 +15,48 @@
  * off it is `undefined`, which is exactly how the store's boot used to die at
  * `window.tb.local.onEvent is not a function`. Every namespace in `TbApi` must
  * appear below, even when all it needs is a pair of no-ops.
+ *
+ * A LOCAL fixture set replaces the built-in one when it exists:
+ * `mock-data/fixtures.ts` at the repository root, default-exporting
+ * `PreviewFixtures`. That folder is git-ignored — it is for staging screenshots
+ * with a fleet of your own — and without it the preview is exactly the
+ * built-in fleet below.
  */
 import type { AgentEvent, AppSettings, TbApi } from '@shared/ipc'
 import { DEFAULT_GUARDRAILS, DEFAULT_LOCAL_MODEL, DEFAULT_MODEL, DEFAULT_OPENROUTER_MODEL, reportFallbackText, type AgentReport, type AgentSummary, type Ledger, type Message, type RunRecord } from '@shared/agents'
 import { DEFAULT_TOOL_POLICY } from '@shared/mcps'
 import { openAsks } from '@shared/awaiting'
+import type { DecisionRecord } from '@shared/decisions'
+import type { TimelineRow } from '@shared/timeline'
+import type { AgentLayout } from '@shared/agentLayout'
 import { useApp } from '@renderer/store/appStore'
+
+/** What the preview hands a local fixture set's `setup`, and exposes as `window.__preview` for scripted walkthroughs. */
+export interface PreviewContext {
+  app: typeof useApp
+  emit(e: AgentEvent): void
+  /** Patch one agent's state and tell the app, the way the engine would. */
+  patch(id: string, next: Partial<AgentSummary['state']>): AgentSummary | null
+  /** Append a message to a thread and tell the app. */
+  post(m: Message): void
+}
+
+/** A fleet to preview instead of the built-in one (see the header). */
+export interface PreviewFixtures {
+  agents: AgentSummary[]
+  messages: Record<string, Message[]>
+  runs?: Record<string, RunRecord[]>
+  decisions?: Record<string, DecisionRecord[]>
+  timeline?: TimelineRow[]
+  layout?: AgentLayout
+  settings?: Partial<AppSettings>
+  /** Bridge methods to add or replace, by namespace (`{ robinhood: { account: async () => … } }`). */
+  bridge?: Record<string, unknown>
+  /** Runs once the bridge is installed — timers, live streams, anything the fleet should do on its own. */
+  setup?(ctx: PreviewContext): void
+}
+
+const local = Object.values(import.meta.glob<{ default: PreviewFixtures }>('../../../../mock-data/fixtures.ts', { eager: true }))[0]?.default ?? null
 
 const now = Date.now()
 const ago = (min: number): string => new Date(now - min * 60_000).toISOString()
@@ -103,7 +139,7 @@ const base = (id: string, name: string, task: string, over: Partial<AgentSummary
   } as AgentSummary['state']
 })
 
-const agents: AgentSummary[] = [
+const builtInAgents: AgentSummary[] = [
   base(A, 'MU Overnight', 'Buy $500 of MU at 3:58 PM ET every trading day, then sell the whole position at 9:31 AM ET the next morning.', {}, {
     exits: { MU: { stop: 99.2, target: 107.4, trail: { pct: 2.5, high: 103.8 }, setAt: ago(60) } },
     watches: [{ id: 'w1', symbol: 'MU', condition: 'below', value: 99.2, baseline: 102.3, note: 'Stop zone — re-read the thesis before it trips.', setAt: ago(58) }],
@@ -171,7 +207,7 @@ const REPORT_ACTED: AgentReport = { headline: 'Flat after the open — +$12.40 o
 
 const msg = <T extends Omit<Message, 'id' | 'agentId'>>(agentId: string, id: string, m: T): Message => ({ id, agentId, ...m }) as unknown as Message
 
-const messages: Record<string, Message[]> = {
+const builtInMessages: Record<string, Message[]> = {
   [A]: [
     msg(A, 'a1', { role: 'system', kind: 'created', text: 'Created — paper mode, $5,000 allocation. Runs on your Claude subscription.', ts: ago(3 * 1440) }),
     msg(A, 'a2', { role: 'user', text: 'Buy $500 of MU at 3:58 PM ET every trading day, then sell the whole position at 9:31 AM ET the next morning.', ts: ago(3 * 1440 - 1) }),
@@ -304,6 +340,9 @@ const messages: Record<string, Message[]> = {
   ]
 }
 
+const agents: AgentSummary[] = local?.agents ?? builtInAgents
+const messages: Record<string, Message[]> = local?.messages ?? builtInMessages
+
 const settings: AppSettings = {
   theme: (localStorage.getItem('tb:theme') as AppSettings['theme']) ?? 'light',
   defaultProvider: 'claude',
@@ -311,7 +350,8 @@ const settings: AppSettings = {
   onboardingDone: true,
   tools: DEFAULT_TOOL_POLICY,
   tradingHalted: false,
-  localModel: { enabled: false, folder: null, modelId: null }
+  localModel: { enabled: false, folder: null, modelId: null },
+  ...local?.settings
 }
 
 const walk = (start: number, n = 40): number[] => {
@@ -360,13 +400,15 @@ const explicit = {
   agents: {
     list: async () => agents,
     messages: async (id: string) => ({ messages: messages[id] ?? [], hasMore: false }),
-    decisions: async () => [],
-    timeline: async () => [],
+    decisions: async (id: string) => local?.decisions?.[id] ?? [],
+    timeline: async () => local?.timeline ?? [],
     // The run log: only quiet ticks matter to the thread (they have no
     // message), so the fixture is four of them for agent A — three in a row
     // between its last two replies, one after — to see the fold and the tail.
     runs: async (id: string): Promise<RunRecord[]> =>
-      id !== A
+      local
+        ? (local.runs?.[id] ?? [])
+        : id !== A
         ? []
         : [50, 40, 30, 2].map((min) => ({
             id: `q${min}`,
@@ -448,7 +490,7 @@ const explicit = {
       return { halted, detail: halted ? 'Live buying is off for every agent.' : 'Live buying is back on for every agent.' }
     }
   },
-  layout: { get: async () => ({ v: 1, groups: [], order: [], membership: {} }), set: async () => ({ ok: true }) },
+  layout: { get: async () => local?.layout ?? { v: 1, groups: [], order: [], membership: {} }, set: async () => ({ ok: true }) },
   local: { status: async () => null, onEvent: () => () => undefined },
   mcp: { status: async () => ({ keys: {}, runtimes: { uv: false, node: true }, platform: 'win32' }) },
   // The market-data key reads as saved, so paper agents mark without Robinhood.
@@ -485,19 +527,42 @@ const fallback = (target: Record<string, unknown>): unknown =>
     }
   })
 
+// A local fixture set may add or replace methods, one namespace at a time.
+for (const [ns, methods] of Object.entries(local?.bridge ?? {})) {
+  const target = (explicit as Record<string, unknown>)[ns]
+  ;(explicit as Record<string, unknown>)[ns] = target && typeof target === 'object' && methods && typeof methods === 'object' ? { ...target, ...methods } : methods
+}
+
 ;(window as unknown as { tb: TbApi }).tb = fallback(explicit) as TbApi
 
-// A run streaming on the OpenRouter agent, so the live bubble and shimmer can be seen.
-setTimeout(() => {
-  emit({ type: 'run:delta', agentId: B, runId: 'r1', delta: { kind: 'start' } } as AgentEvent)
-  setTimeout(() => emit({ type: 'run:delta', agentId: B, runId: 'r1', delta: { kind: 'tool', name: 'mcp__robinhood__get_equity_quotes' } } as AgentEvent), 800)
-}, 1200)
+const ctx: PreviewContext = {
+  app: useApp,
+  emit,
+  patch,
+  post: (m) => {
+    ;(messages[m.agentId] ??= []).push(m)
+    emit({ type: 'message:new', message: m })
+  }
+}
+;(window as unknown as { __preview: PreviewContext }).__preview = ctx
 
-// One message that could not be sent, so the "Not sent · Try again / Discard"
-// state is reviewable without unplugging anything. It goes through the store's
-// own `send`, which is what marks it failed — seeding `msgStatus` directly would
-// be a picture of the state rather than the state. Late enough that boot's
-// `loadMessages` has already replaced the thread array.
-setTimeout(() => {
-  void useApp.getState().send(A, 'fail — did the 3:58 entry go in?')
-}, 1600)
+if (local) local.setup?.(ctx)
+else builtInDemos()
+
+/** The built-in fleet's moving parts: a streaming run and a failed send. */
+function builtInDemos(): void {
+  // A run streaming on the OpenRouter agent, so the live bubble and shimmer can be seen.
+  setTimeout(() => {
+    emit({ type: 'run:delta', agentId: B, runId: 'r1', delta: { kind: 'start' } } as AgentEvent)
+    setTimeout(() => emit({ type: 'run:delta', agentId: B, runId: 'r1', delta: { kind: 'tool', name: 'mcp__robinhood__get_equity_quotes' } } as AgentEvent), 800)
+  }, 1200)
+
+  // One message that could not be sent, so the "Not sent · Try again / Discard"
+  // state is reviewable without unplugging anything. It goes through the store's
+  // own `send`, which is what marks it failed — seeding `msgStatus` directly would
+  // be a picture of the state rather than the state. Late enough that boot's
+  // `loadMessages` has already replaced the thread array.
+  setTimeout(() => {
+    void useApp.getState().send(A, 'fail — did the 3:58 entry go in?')
+  }, 1600)
+}
