@@ -172,7 +172,7 @@ npm run typecheck    # type-check everything
 npm run check        # behaviour checks (no network, no credentials)
 npm run build        # production build
 npm run dist:win     # installer (or dist:mac / dist:linux) → dist/
-npm run preview      # the interface alone in a browser, with sample data
+npm run preview      # the interface alone in a browser, no engine needed
 ```
 
 How it works inside: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · design rules:
